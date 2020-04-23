@@ -4,9 +4,11 @@ import pickle
 import main
 import Error
 
-helper_x = 0 # To decide between Err01 or Err02
+helper_x = 0 # To decide between Err01 or Err02 & To confirm the detection
 
 face_cascade = cv2.CascadeClassifier('')
+
+# camID = main.camID
 
 recognizer = cv2.face.LBPHFaceRecognizer_create()
 recognizer.read("trainner.yml")
@@ -16,47 +18,52 @@ with open("labels.pickle", 'wb') as f:
     og_labels = pickle.load(f)
     labels = {v:k for k,v in labels.items()} # Reverse Key and Value
 
-cap = cv2.VideoCapture(main.camID)
+def recognize(camID):
 
-while True:
-    ret, frame = cap.read()
-    gray = cv2.cvtColor(frame,cv2.COLOR_BGR2GRAY)
+    cap = cv2.VideoCapture(camID)
 
-    faces = face_cascade.detectMultiScale(gray, scaleFactor=1, minNeighbors=5)
+    while True:
+        ret, frame = cap.read()
+        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
-    for(x,y,w,h) in faces:
-        roi_gray = gray[y:y+h, x:x+w] # roi : Region Of Interest
-        roi_color = frame[y:y+h, x:x+w]
+        faces = face_cascade.detectMultiScale(gray, scaleFactor=1, minNeighbors=5)
 
-        id_, conf = recognizer.predict(roi_gray) # conf : confidence
-        if conf >= 75:
-            helper_x = 1
-            print(id_)
-            print(labels[id_])
-            main.trail.append(main.camID)
-            font = cv2.FONT_HERSHEY_SIMPLEX
-            name = labels[id_]
-            color = (255,255,255)
-            stroke = 2
-            cv2.putText(frame, name, (x,y), font, 1, color, stroke, cv2.LINE_AA)
+        for (x, y, w, h) in faces:
+            roi_gray = gray[y:y + h, x:x + w]  # roi : Region Of Interest
+            roi_color = frame[y:y + h, x:x + w]
 
-        else:
-            if helper_x == 0:
-                print(Error.notRecognizable , "Or Confidence Level < 75")
+            id_, conf = recognizer.predict(roi_gray)  # conf : confidence
+            if conf >= 75:
+                helper_x = 1
+                print(id_)
+                print(labels[id_])
+                font = cv2.FONT_HERSHEY_SIMPLEX
+                name = labels[id_]
+                color = (255, 255, 255)
+                stroke = 2
+                cv2.putText(frame, name, (x, y), font, 1, color, stroke, cv2.LINE_AA)
+
             else:
-                print(Error.blindSpot)
+                if helper_x == 0:
+                    print(camID," >> ", Error.notRecognizable)
+                else:
+                    print(camID," >> ", Error.blindSpot)
 
-        img_item = "my-img.png"
+            img_item = "my-img.png"
 
-        cv2.imwrite(img_item,roi_gray)
+            cv2.imwrite(img_item, roi_gray)
 
-        color = (255,0,0) # BGR scale
-        stroke = 2 # Thickness of border line
-        cv2.rectangle(frame, (x,y), (x+w, y+h), color, stroke)
+            color = (255, 0, 0)
+            stroke = 2
+            cv2.rectangle(frame, (x, y), (x + w, y + h), color, stroke)
 
-    cv2.imshow("Frame", frame)
-    if cv2.waitKey(20) & 0xFF == ord('q'):
-        break
+
+
+        cv2.imshow("Frame", frame)
+        if cv2.waitKey(20) & 0xFF == ord('q'):
+            break
+
+    return helper_x
 
 # cap.release()
 # cv2.destroyAllWindows()
