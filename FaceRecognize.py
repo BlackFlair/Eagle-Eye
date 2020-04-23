@@ -2,6 +2,9 @@ import cv2
 import pickle
 
 import main
+import Error
+
+helper_x = 0 # To decide between Err01 or Err02
 
 face_cascade = cv2.CascadeClassifier('')
 
@@ -27,6 +30,7 @@ while True:
 
         id_, conf = recognizer.predict(roi_gray) # conf : confidence
         if conf >= 75:
+            helper_x = 1
             print(id_)
             print(labels[id_])
             main.trail.append(main.camID)
@@ -35,6 +39,12 @@ while True:
             color = (255,255,255)
             stroke = 2
             cv2.putText(frame, name, (x,y), font, 1, color, stroke, cv2.LINE_AA)
+
+        else:
+            if helper_x == 0:
+                print(Error.notRecognizable , "Or Confidence Level < 75")
+            else:
+                print(Error.blindSpot)
 
         img_item = "my-img.png"
 
